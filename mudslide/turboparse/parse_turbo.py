@@ -15,6 +15,7 @@ from .scf_parser import RIDFTParser, DSCFParser, RdgradModuleParser, GradModuleP
 from .response_parser import EgradParser, EscfParser
 from .freeh_parser import FreeHParser
 from .thermo_parser import ThermoParser
+from .riper_parser import RIPERParser
 
 
 class TurboParser(ParseSection):
@@ -35,7 +36,8 @@ class TurboParser(ParseSection):
             EgradParser(),
             EscfParser(),
             FreeHParser(),
-            ThermoParser()
+            ThermoParser(),
+            RIPERParser(),
         ]
 
 

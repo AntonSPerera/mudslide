@@ -446,3 +446,126 @@ class TestBH:
         assert gradients[0]['index'] == 1
         assert gradients[1]['index'] == 2
         assert gradients[2]['index'] == 3
+
+
+class TestRIPER:
+    """Test parsing of riper.out periodic DFT output"""
+
+    @pytest.fixture
+    def parsed(self):
+        filepath = os.path.join(exampledir, "riper.out")
+        with open(filepath, 'r') as f:
+            return parse_turbo(f)
+
+    def test_has_riper_key(self, parsed):
+        assert 'riper' in parsed
+
+    def test_converged(self, parsed):
+        assert parsed['riper']['converged'] is True
+
+    def test_total_energy(self, parsed):
+        assert parsed['riper']['energies']['total'] == pytest.approx(-1368.6331885799)
+
+    def test_kinetic_energy(self, parsed):
+        assert parsed['riper']['energies']['kinetic'] == pytest.approx(1353.3458749453)
+
+    def test_free_energy(self, parsed):
+        assert parsed['riper']['energies']['free'] == pytest.approx(-1368.6385204026)
+
+    def test_sigma0_energy(self, parsed):
+        assert parsed['riper']['energies']['sigma0'] == pytest.approx(-1368.6358544913)
+
+    def test_scf_basis_ncont(self, parsed):
+        # index 0 is the SCF basis (def2-SVP, 504 contracted functions)
+        assert parsed['riper']['basis'][0]['ncont'] == 504
+
+    def test_scf_basis_nick(self, parsed):
+        assert parsed['riper']['basis'][0]['nick'] == 'def2-SVP'
+
+    def test_aux_basis_ncont(self, parsed):
+        # index 1 is the auxiliary RI-J basis (def2-SVP, 1764 contracted functions)
+        assert parsed['riper']['basis'][1]['ncont'] == 1764
+
+    def test_two_basis_sets(self, parsed):
+        assert len(parsed['riper']['basis']) == 2
+
+    def test_kpoints_total(self, parsed):
+        assert parsed['riper']['kpoints']['total'] == 81
+
+    def test_kpoints_distinct(self, parsed):
+        assert parsed['riper']['kpoints']['distinct'] == 41
+
+    def test_kpoints_two_directions(self, parsed):
+        assert len(parsed['riper']['kpoints']['directions']) == 2
+
+    def test_kpoints_dir_a_label(self, parsed):
+        assert parsed['riper']['kpoints']['directions'][0]['label'] == 'a'
+
+    def test_kpoints_dir_a_count(self, parsed):
+        assert parsed['riper']['kpoints']['directions'][0]['nkpoints'] == 9
+
+    def test_kpoints_dir_a_fractional(self, parsed):
+        coords = parsed['riper']['kpoints']['directions'][0]['fractional_coords']
+        assert len(coords) == 9
+        assert coords[0] == pytest.approx(-0.4444)
+        assert coords[-1] == pytest.approx(0.4444)
+
+    def test_cell_ndim(self, parsed):
+        assert parsed['riper']['cell']['ndim'] == 2
+
+    def test_cell_param_a(self, parsed):
+        # |a| = 18.00953165 au
+        assert parsed['riper']['cell']['a'] == pytest.approx(18.00953165)
+
+    def test_cell_param_gamma(self, parsed):
+        assert parsed['riper']['cell']['gamma'] == pytest.approx(60.001)
+
+    def test_direct_vectors_shape(self, parsed):
+        direct = parsed['riper']['cell']['direct']
+        assert len(direct) == 2
+        assert len(direct[0]) == 3
+
+    def test_direct_vector_a(self, parsed):
+        # a = (18.00602412, -0.35542303, 0.0)
+        assert parsed['riper']['cell']['direct'][0] == pytest.approx(
+            [18.00602412, -0.35542303, 0.0]
+        )
+
+    def test_direct_vector_b(self, parsed):
+        assert parsed['riper']['cell']['direct'][1] == pytest.approx(
+            [9.31201559, 15.41869932, 0.0]
+        )
+
+    def test_reciprocal_vectors_shape(self, parsed):
+        recip = parsed['riper']['cell']['reciprocal']
+        assert len(recip) == 2
+
+    def test_reciprocal_vector_a(self, parsed):
+        assert parsed['riper']['cell']['reciprocal'][0] == pytest.approx(
+            [0.34483815, -0.20826259, 0.0]
+        )
+
+    def test_fermi_band_gap(self, parsed):
+        assert parsed['riper']['fermi']['band_gap'] == pytest.approx(0.005816)
+
+    def test_fermi_homo(self, parsed):
+        assert parsed['riper']['fermi']['homo'] == pytest.approx(-0.149811)
+
+    def test_fermi_lumo(self, parsed):
+        assert parsed['riper']['fermi']['lumo'] == pytest.approx(-0.143995)
+
+    def test_fermi_level(self, parsed):
+        assert parsed['riper']['fermi']['fermi_level'] == pytest.approx(-0.190176)
+
+    def test_stress_tensor_components(self, parsed):
+        tensor = parsed['riper']['stress']['tensor']
+        assert len(tensor) == 9
+
+    def test_stress_tensor_xx(self, parsed):
+        assert parsed['riper']['stress']['tensor']['xx'] == pytest.approx(-9.065132766511397e-2)
+
+    def test_stress_tensor_zz(self, parsed):
+        assert parsed['riper']['stress']['tensor']['zz'] == pytest.approx(-7.316926460328699e-2)
+
+    def test_energy_matches_total(self, parsed):
+        assert parsed['riper']['energy'] == pytest.approx(-1368.6331885799)
